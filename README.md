@@ -1,149 +1,258 @@
-# DevBoard
+# DevBoard — Indie Talent Marketplace
 
-DevBoard is a full-stack marketplace where founders can post software projects and developers can apply with focused pitches. The stack is intentionally simple and reviewer-friendly: Next.js on the frontend, Express on the backend, and PostgreSQL with `pg` for the data layer.
+> A full-stack platform where founders post scoped software projects and developers apply with focused pitches. No cold DMs, no inbox clutter — just clean project listings and structured applications.
+
+![DevBoard](https://devboard-gamma-gilt.vercel.app/og.png)
 
 ## Live Demo
 
-- Frontend: `TBD`
-- Backend API: `TBD`
-- Loom walkthrough: `TBD`
+- **Frontend:** https://devboard-gamma-gilt.vercel.app
+- **Backend API:** https://devboard-production-68f5.up.railway.app
+- **GitHub:** https://github.com/Shaurya002800/devboard
 
-Replace the placeholders above before submission with your Vercel URL, Railway API URL, and optional walkthrough link.
+---
 
-## Features
+## What It Does
 
-- JWT-based authentication with password hashing via `bcryptjs`
-- Browse page with stack and budget filters plus pagination
-- Project detail page with application flow
-- Post project form with validation and auth guard
-- Dashboard with `My posts` and `My apps` tabs
-- Applicant review flow for project owners
-- Loading skeletons, empty states, toasts, and responsive UI
+DevBoard is a mini marketplace for indie software projects. Founders post work they need done — with a title, description, tech stack, budget, and deadline. Developers browse open listings, filter by stack or budget, and apply with a focused pitch. Project owners review applicants from their dashboard and accept or reject them directly.
+
+**Core user flows:**
+
+- Register and log in with JWT authentication
+- Post a project with tech stack, budget, and deadline
+- Browse all open projects with stack and budget filters
+- Apply to a project with a written pitch
+- Dashboard shows your posted projects and your applications
+- Project owners can accept or reject applicants
+
+---
 
 ## Tech Stack
 
-- Frontend: Next.js App Router, React 19, Tailwind CSS
-- Backend: Node.js, Express
-- Database: PostgreSQL via `pg`
-- Auth: JWT, `bcryptjs`
-- Tooling: ESLint, Prettier
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 15 (App Router), React 19, Tailwind CSS |
+| Backend | Node.js, Express |
+| Database | PostgreSQL via `pg` |
+| Auth | JWT + bcryptjs |
+| Deployment | Vercel (frontend) + Railway (backend + DB) |
+| Tooling | ESLint, Prettier |
+
+---
 
 ## Project Structure
-
-```text
 devboard/
-├── client/
-│   ├── app/
-│   ├── components/
-│   └── lib/api.js
-├── server/
-│   ├── db/
-│   ├── middleware/
+├── client/                  # Next.js frontend
+│   ├── app/                 # App router pages
+│   │   ├── page.js          # Home / browse page
+│   │   ├── auth/            # Login + register pages
+│   │   ├── projects/        # Project detail + post pages
+│   │   └── dashboard/       # User dashboard
+│   ├── components/          # Reusable UI components
+│   └── lib/
+│       └── api.js           # Centralised API fetch helper
+├── server/                  # Express backend
 │   ├── routes/
-│   └── index.js
+│   │   ├── auth.js          # Register, login, /me
+│   │   ├── projects.js      # CRUD + filters
+│   │   └── applications.js  # Apply, review, accept/reject
+│   ├── middleware/
+│   │   └── auth.js          # JWT guard middleware
+│   ├── db/
+│   │   ├── index.js         # pg Pool connection
+│   │   └── migrate.js       # Table creation script
+│   └── index.js             # Express app entry point
 ├── .env.example
 └── README.md
-```
 
 ## Local Setup
 
-1. Copy env values:
+### Prerequisites
+- Node.js 18+
+- PostgreSQL running locally
+
+### 1. Clone the repo
 
 ```bash
-cp .env.example .env
-cp client/.env.example client/.env.local
-cp server/.env.example server/.env
+git clone https://github.com/Shaurya002800/devboard.git
+cd devboard
 ```
 
-2. Install dependencies:
-
-```bash
-cd client && npm install
-cd ../server && npm install
-```
-
-3. Start PostgreSQL and create a database named `devboard`.
-
-4. Run migrations:
+### 2. Set up the server
 
 ```bash
 cd server
+npm install
+cp .env.example .env
+# Fill in your values (see Environment Variables below)
 npm run migrate
+npm run dev
 ```
 
-5. Start the apps:
+### 3. Set up the client
 
 ```bash
 cd client
+npm install
+# Create .env.local
+echo "NEXT_PUBLIC_API_URL=http://localhost:5000" > .env.local
 npm run dev
 ```
 
-```bash
-cd server
-npm run dev
-```
+### 4. Open in browser
 
-Frontend runs on [http://localhost:3000](http://localhost:3000) and the API runs on [http://localhost:5000](http://localhost:5000).
+- Frontend: http://localhost:3000
+- API: http://localhost:5000
 
-## Available Scripts
+---
 
-### Client
+## Environment Variables
 
-- `npm run dev`
-- `npm run build`
-- `npm run lint`
-- `npm run format`
+### `server/.env`
+PORT=5000
+DATABASE_URL=postgresql://username@localhost:5432/devboard
+JWT_SECRET=your_strong_secret_here
+CLIENT_URL=http://localhost:3000
+NODE_ENV=development
 
-### Server
+### `client/.env.local`
 
-- `npm run dev`
-- `npm run start`
-- `npm run migrate`
-- `npm run check`
-- `npm run format`
+NEXT_PUBLIC_API_URL=http://localhost:5000
 
-## API Summary
+---
+
+## API Reference
 
 ### Auth
 
-- `POST /api/auth/register`
-- `POST /api/auth/login`
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/auth/register` | No | Create account |
+| POST | `/api/auth/login` | No | Login, returns JWT |
+| GET | `/api/auth/me` | Yes | Get current user |
 
 ### Projects
 
-- `GET /api/projects`
-- `GET /api/projects/:id`
-- `POST /api/projects`
-- `PATCH /api/projects/:id`
-- `DELETE /api/projects/:id`
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/projects` | No | List all (supports `?stack=` and `?budget=` filters) |
+| GET | `/api/projects/:id` | No | Single project with applicant count |
+| POST | `/api/projects` | Yes | Create a project |
+| PATCH | `/api/projects/:id` | Yes | Update (poster only) |
+| DELETE | `/api/projects/:id` | Yes | Delete (poster only) |
 
 ### Applications
 
-- `POST /api/applications`
-- `GET /api/applications/project/:id`
-- `PATCH /api/applications/:id`
-- `GET /api/applications/mine`
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/applications` | Yes | Apply to a project |
+| GET | `/api/applications/mine` | Yes | Your own applications |
+| GET | `/api/applications/project/:id` | Yes | All applicants (poster only) |
+| PATCH | `/api/applications/:id` | Yes | Accept or reject (poster only) |
 
-## Deployment Notes
+---
 
-- Deploy `client/` to Vercel
-- Deploy `server/` to Railway
-- Provision PostgreSQL on Railway
-- Set `CLIENT_URL` on the server to your deployed Vercel domain
-- Set `NEXT_PUBLIC_API_URL` on the client to your deployed API URL, including `/api`
+## Database Schema
+
+```sql
+users (
+  id UUID PRIMARY KEY,
+  name TEXT,
+  email TEXT UNIQUE,
+  password_hash TEXT,
+  bio TEXT,
+  created_at TIMESTAMPTZ
+)
+
+projects (
+  id UUID PRIMARY KEY,
+  poster_id UUID → users,
+  title TEXT,
+  description TEXT,
+  tech_stack TEXT[],
+  budget INTEGER,
+  deadline DATE,
+  status TEXT DEFAULT 'open',
+  created_at TIMESTAMPTZ
+)
+
+applications (
+  id UUID PRIMARY KEY,
+  project_id UUID → projects,
+  applicant_id UUID → users,
+  pitch TEXT,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMPTZ,
+  UNIQUE(project_id, applicant_id)
+)
+```
+
+---
+
+## Deployment
+
+| Service | Platform | Config |
+|---|---|---|
+| Frontend | Vercel | Root directory: `client` |
+| Backend | Railway | Root directory: `server` |
+| Database | Railway PostgreSQL | Provisioned alongside backend |
+
+**Environment variables to set on each platform:**
+
+Vercel:
+NEXT_PUBLIC_API_URL = https://devboard-production-68f5.up.railway.app
+
+Railway:
+DATABASE_URL = (from Railway Postgres service)
+JWT_SECRET = your_strong_secret
+CLIENT_URL = https://devboard-gamma-gilt.vercel.app
+NODE_ENV = production
+
+---
+
+## Scripts
+
+### Client
+```bash
+npm run dev       # Start dev server
+npm run build     # Production build
+npm run lint      # Run ESLint
+```
+
+### Server
+```bash
+npm run dev       # Start with nodemon
+npm run start     # Start production
+npm run migrate   # Create database tables
+```
+
+---
+
+## What I'd Add With More Time
+
+- Email notifications when an application is accepted or rejected
+- In-app messaging between poster and applicant
+- GitHub profile integration on user profiles
+- Project editing UI for posters
+- Automated tests for API routes and client flows
+- Saved/bookmarked projects
+
+---
 
 ## Screenshots
 
-Add submission screenshots here:
+### Home — Browse Projects
+![Browse](screenshots/browse.png)
 
-- Home / browse page
-- Project detail page
-- Dashboard
-- Auth flow
+### Project Detail + Apply
+![Detail](screenshots/detail.png)
 
-## What I’d Add With More Time
+### Dashboard
+![Dashboard](screenshots/dashboard.png)
 
-- Richer profile pages and saved developer bios
-- Project editing UI and better poster-side moderation tools
-- Automated tests for route behavior and critical client flows
-- Email notifications when applications are submitted or reviewed
+### Auth Flow
+![Auth](screenshots/auth.png)
+
+---
+
+Built by **Shaurya** · VIT Vellore · Full Stack Developer Internship — Round 2

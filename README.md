@@ -7,7 +7,7 @@
 ## Live Demo
 
 - **Frontend:** https://devboard-gamma-gilt.vercel.app
-- **Backend API:** https://devboard-production-68f5.up.railway.app
+- **Backend API:** https://devboard-api-tan.vercel.app
 - **GitHub:** https://github.com/Shaurya002800/devboard
 
 ---
@@ -35,7 +35,7 @@ DevBoard is a mini marketplace for indie software projects. Founders post work t
 | Backend | Node.js, Express |
 | Database | PostgreSQL via `pg` |
 | Auth | JWT + bcryptjs |
-| Deployment | Vercel (frontend) + Railway (backend + DB) |
+| Deployment | Vercel (frontend + API) + Neon (PostgreSQL) |
 | Tooling | ESLint, Prettier |
 
 ---
@@ -198,21 +198,32 @@ applications (
 | Service | Platform | Config |
 |---|---|---|
 | Frontend | Vercel | Root directory: `client` |
-| Backend | Railway | Root directory: `server` |
-| Database | Railway PostgreSQL | Provisioned alongside backend |
+| Backend | Vercel (`devboard-api`) | Root directory: `server`, Express preset |
+| Database | Neon Free | Connected to the API through Vercel Marketplace |
 
 **Environment variables to set on each platform:**
 
-Vercel:
-NEXT_PUBLIC_API_URL = https://devboard-production-68f5.up.railway.app
+Frontend Vercel project:
+NEXT_PUBLIC_API_URL = https://devboard-api-tan.vercel.app
 
-Railway:
-DATABASE_URL = (from Railway Postgres service)
+Backend Vercel project:
+DATABASE_URL = (provided by the Neon integration; TLS-enabled pooled URL)
 JWT_SECRET = your_strong_secret
 CLIENT_URL = https://devboard-gamma-gilt.vercel.app
 NODE_ENV = production
 
 ---
+
+The API readiness endpoint is `GET /api/health`; HTTP 200 confirms database connectivity.
+Both Vercel projects deploy from `main`. Frontend environment changes require a rebuild.
+The API uses a shared connection pool with Vercel lifecycle management and requires
+`DATABASE_URL` and `JWT_SECRET` in production. Initialize a new database with
+`npm run migrate` from `server` after loading its connection URL securely.
+
+On 18 October 2026, hosting moved from the expired Railway trial to Vercel and a
+fresh Neon database. **Old Railway accounts, projects, and applications have not
+been imported.** Railway resources were left intact for possible later recovery.
+See [migration notes](docs/HOSTING_MIGRATION.md) before restoring old data.
 
 ## Scripts
 

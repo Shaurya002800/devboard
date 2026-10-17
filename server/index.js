@@ -2,6 +2,10 @@ const express = require('express')
 const cors = require('cors')
 require('dotenv').config()
 
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET is required in production')
+}
+
 const app = express()
 
 app.use(
@@ -17,6 +21,16 @@ app.use(require('./middleware/validation').objectBody)
 app.use('/api/auth', require('./routes/auth'))
 app.use('/api/projects', require('./routes/projects'))
 app.use('/api/applications', require('./routes/applications'))
+
+app.get('/api/health', async (req, res) => {
+  res.set('Cache-Control', 'no-store')
+  try {
+    await require('./db').query('SELECT 1')
+    res.json({ status: 'ok', database: 'connected' })
+  } catch {
+    res.status(503).json({ status: 'unavailable' })
+  }
+})
 
 app.get('/', (req, res) => res.json({ status: 'DevBoard API running' }))
 

@@ -1,11 +1,21 @@
 require('dotenv').config()
 const { Pool } = require('pg')
+const { attachDatabasePool } = require('@vercel/functions')
+
+if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL is required in production')
+}
 
 const pool = new Pool({
   connectionString:
     process.env.DATABASE_URL || 'postgresql://shaurya@localhost:5432/devboard',
-  ssl: false,
+  // Let the connection URL select TLS (Neon supplies sslmode=require).
+  max: 5,
+  idleTimeoutMillis: 5000,
+  connectionTimeoutMillis: 10000,
 })
+
+if (process.env.VERCEL) attachDatabasePool(pool)
 
 pool.on('error', (err) => {
   console.error('Postgres pool error:', err)

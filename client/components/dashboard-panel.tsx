@@ -132,20 +132,15 @@ export function DashboardPanel() {
   ) {
     try {
       await updateApplicationStatus(applicationId, { status })
+      const [applicants, projectResponse] = await Promise.all([
+        fetchProjectApplications(projectId),
+        fetchMyProjects(),
+      ])
       setProjectApplicants((current) => ({
         ...current,
-        [projectId]: (current[projectId] || []).map((application) => {
-          if (application.id === applicationId) {
-            return { ...application, status }
-          }
-
-          if (status === 'accepted' && application.status === 'pending') {
-            return { ...application, status: 'rejected' }
-          }
-
-          return application
-        }),
+        [projectId]: applicants,
       }))
+      setProjects(projectResponse.data)
       showToast(
         status === 'accepted'
           ? 'Application accepted!'

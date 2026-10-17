@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuthToken } from '@/components/use-auth-token'
 import {
   createApplication,
   fetchMyApplications,
@@ -30,6 +32,8 @@ type Application = {
 
 export function ApplyPanel({ project }: { project: Project }) {
   const { showToast } = useToast()
+  const router = useRouter()
+  const { token } = useAuthToken()
   const [pitch, setPitch] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -40,7 +44,7 @@ export function ApplyPanel({ project }: { project: Project }) {
   const [applyStateLoading, setApplyStateLoading] = useState(false)
   const [currentUserName, setCurrentUserName] = useState('')
 
-  const user = useMemo(() => getTokenPayload(), [])
+  const user = useMemo(() => getTokenPayload(token), [token])
   const isOwner = user?.id === project.poster_id
 
   useEffect(() => {
@@ -133,6 +137,7 @@ export function ApplyPanel({ project }: { project: Project }) {
       setAlreadyApplied(true)
       setApplySuccess(true)
       showToast('Application sent!')
+      router.refresh()
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -150,13 +155,8 @@ export function ApplyPanel({ project }: { project: Project }) {
   ) {
     try {
       await updateApplicationStatus(applicationId, { status })
-      setApplications((current) =>
-        current.map((application) =>
-          application.id === applicationId
-            ? { ...application, status }
-            : application
-        )
-      )
+      setApplications(await fetchProjectApplications(project.id))
+      router.refresh()
       showToast(
         status === 'accepted'
           ? 'Application accepted!'

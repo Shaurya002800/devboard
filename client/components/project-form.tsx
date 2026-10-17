@@ -14,7 +14,7 @@ type ProjectFormProps = {
     tech_stack: string
     budget: string
     deadline: string
-    status: 'open' | 'closed'
+    status: 'open' | 'closed' | 'in_progress'
   }
 }
 
@@ -185,6 +185,7 @@ export function ProjectForm({
             defaultValue={initialValues.status}
           >
             <option value="open">Open</option>
+            <option value="in_progress">In progress</option>
             <option value="closed">Closed</option>
           </select>
         </div>

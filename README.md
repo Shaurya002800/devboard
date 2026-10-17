@@ -31,7 +31,7 @@ DevBoard is a mini marketplace for indie software projects. Founders post work t
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 15 (App Router), React 19, Tailwind CSS |
+| Frontend | Next.js 16 (App Router), React 19, Tailwind CSS |
 | Backend | Node.js, Express |
 | Database | PostgreSQL via `pg` |
 | Auth | JWT + bcryptjs |
@@ -65,10 +65,14 @@ devboard/
 ├── .env.example
 └── README.md
 
+## Architecture and Reliability
+
+See [the project review](docs/PROJECT_REVIEW.md) for architecture, lifecycle rules, verified fixes, remaining risks, and regression-test commands.
+
 ## Local Setup
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 20.9+
 - PostgreSQL running locally
 
 ### 1. Clone the repo
@@ -224,17 +228,17 @@ npm run lint      # Run ESLint
 npm run dev       # Start with nodemon
 npm run start     # Start production
 npm run migrate   # Create database tables
+npm test          # Unit tests; integration tests also run with TEST_DATABASE_URL
 ```
 
 ---
 
-## What I'd Add With More Time
+## Further Improvements
 
 - Email notifications when an application is accepted or rejected
 - In-app messaging between poster and applicant
 - GitHub profile integration on user profiles
-- Project editing UI for posters
-- Automated tests for API routes and client flows
+- Browser regression tests for client flows
 - Saved/bookmarked projects
 
 ---

@@ -13,7 +13,7 @@ type EditableProject = {
   tech_stack: string[]
   budget: number | null
   deadline: string | null
-  status: 'open' | 'closed'
+  status: 'open' | 'closed' | 'in_progress'
   poster_id: string
 }
 
@@ -119,7 +119,7 @@ export default function EditProjectPage() {
           title: project.title,
           description: project.description,
           tech_stack: project.tech_stack.join(', '),
-          budget: project.budget ? String(project.budget) : '',
+          budget: project.budget !== null ? String(project.budget) : '',
           deadline: project.deadline ? project.deadline.slice(0, 10) : '',
           status: project.status,
         }}

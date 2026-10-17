@@ -10,7 +10,9 @@ app.use(
     credentials: true,
   })
 )
-app.use(express.json())
+app.disable('x-powered-by')
+app.use(express.json({ limit: '100kb' }))
+app.use(require('./middleware/validation').objectBody)
 
 app.use('/api/auth', require('./routes/auth'))
 app.use('/api/projects', require('./routes/projects'))
@@ -22,17 +24,12 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' })
 })
 
-app.use((err, req, res, next) => {
-  console.error(err)
+app.use(require('./middleware/error'))
 
-  if (res.headersSent) {
-    return next(err)
-  }
-
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal server error',
-  })
-})
+module.exports = app
 
 const PORT = process.env.PORT || 5000
-app.listen(PORT, () => console.log(`Server on port ${PORT}`))
+if (require.main === module) {
+  if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is required')
+  app.listen(PORT, () => console.log(`Server on port ${PORT}`))
+}

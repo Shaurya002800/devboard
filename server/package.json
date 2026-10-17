@@ -10,7 +10,7 @@
     "check": "node --check index.js && node --check routes/auth.js && node --check routes/projects.js && node --check routes/applications.js && node --check middleware/auth.js && node --check middleware/optional-auth.js && node --check db/migrate.js",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "echo \"No automated tests yet\""
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",

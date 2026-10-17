@@ -3,22 +3,13 @@ const db = require('../db')
 const auth = require('../middleware/auth')
 const optionalAuth = require('../middleware/optional-auth')
 
-function normalizeTechStack(techStack) {
-  if (Array.isArray(techStack)) {
-    return techStack
-      .map((item) => String(item).trim().toLowerCase())
-      .filter(Boolean)
-  }
-
-  if (typeof techStack === 'string') {
-    return techStack
-      .split(',')
-      .map((item) => item.trim().toLowerCase())
-      .filter(Boolean)
-  }
-
-  return []
-}
+const {
+  projectFields,
+  idParam,
+  budget: validateBudget,
+  invalid,
+} = require('../middleware/validation')
+router.param('id', idParam)
 
 router.get('/', optionalAuth, async (req, res, next) => {
   try {
@@ -26,8 +17,23 @@ router.get('/', optionalAuth, async (req, res, next) => {
     const values = []
     const conditions = []
 
-    const pageNumber = Math.max(Number.parseInt(page, 10) || 1, 1)
-    const pageSize = Math.min(Math.max(Number.parseInt(limit, 10) || 6, 1), 24)
+    if (
+      ![page, limit].every(
+        (value) =>
+          typeof value === 'string' &&
+          /^\d+$/.test(value) &&
+          Number.isSafeInteger(Number(value)) &&
+          Number(value) > 0
+      )
+    )
+      invalid('Page and limit must be positive integers')
+    const pageNumber = Number(page)
+    const pageSize = Math.min(Number(limit), 24)
+    if (!Number.isSafeInteger(pageNumber * pageSize))
+      invalid('Page is too large')
+    if (stack !== undefined && typeof stack !== 'string')
+      invalid('Stack must be text')
+    if (!['true', 'false'].includes(mine)) invalid('Mine must be true or false')
 
     if (stack) {
       values.push(String(stack).trim().toLowerCase())
@@ -35,7 +41,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
     }
 
     if (budget) {
-      values.push(Number.parseInt(budget, 10) || 0)
+      values.push(validateBudget(budget, null))
       conditions.push(`p.budget <= $${values.length}`)
     }
 
@@ -69,7 +75,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
       LEFT JOIN applications a ON a.project_id = p.id
       ${whereClause}
       GROUP BY p.id, u.id
-      ORDER BY p.created_at DESC
+      ORDER BY p.created_at DESC, p.id DESC
       LIMIT $${values.length - 1}
       OFFSET $${values.length}
     `
@@ -110,7 +116,6 @@ router.get('/:id', async (req, res, next) => {
           p.*,
           u.name AS poster_name,
           u.bio AS poster_bio,
-          u.email AS poster_email,
           COUNT(a.id)::INT AS applicant_count
         FROM projects p
         JOIN users u ON u.id = p.poster_id
@@ -138,29 +143,11 @@ router.post('/', auth, async (req, res, next) => {
     const {
       title,
       description,
-      tech_stack,
-      budget,
+      tech_stack: normalizedTechStack,
+      budget: normalizedBudget,
       deadline,
-      status = 'open',
-    } = req.body
-    const normalizedTechStack = normalizeTechStack(tech_stack)
-    const normalizedBudget = normalizeBudget(budget, null)
-
-    if (!title || !description || !normalizedTechStack.length || !deadline) {
-      return res.status(400).json({
-        error: 'Title, description, tech stack, and deadline are required',
-      })
-    }
-
-    if (normalizedBudget !== null && normalizedBudget < 0) {
-      return res.status(400).json({ error: 'Budget must be a positive number' })
-    }
-
-    if (!['open', 'closed', 'in_progress'].includes(status)) {
-      return res
-        .status(400)
-        .json({ error: 'Status must be open, in_progress, or closed' })
-    }
+      status,
+    } = projectFields(req.body)
 
     const result = await db.query(
       `
@@ -187,68 +174,60 @@ router.post('/', auth, async (req, res, next) => {
 
 router.patch('/:id', auth, async (req, res, next) => {
   try {
-    const projectResult = await db.query(
-      'SELECT * FROM projects WHERE id = $1',
-      [req.params.id]
-    )
-    const project = projectResult.rows[0]
+    const updated = await db.transaction(async (client) => {
+      const projectResult = await client.query(
+        'SELECT * FROM projects WHERE id = $1 FOR UPDATE',
+        [req.params.id]
+      )
+      const project = projectResult.rows[0]
 
-    if (!project) {
-      return res.status(404).json({ error: 'Project not found' })
-    }
+      if (!project) {
+        throw Object.assign(new Error('Project not found'), { status: 404 })
+      }
 
-    if (project.poster_id !== req.user.id) {
-      return res
-        .status(403)
-        .json({ error: 'Only the project owner can edit this project' })
-    }
+      if (project.poster_id !== req.user.id) {
+        throw Object.assign(
+          new Error('Only the project owner can edit this project'),
+          { status: 403 }
+        )
+      }
 
-    const updatedFields = {
-      title: req.body.title?.trim() || project.title,
-      description: req.body.description?.trim() || project.description,
-      tech_stack: req.body.tech_stack
-        ? normalizeTechStack(req.body.tech_stack)
-        : project.tech_stack,
-      budget: normalizeBudget(req.body.budget, project.budget),
-      deadline: req.body.deadline || project.deadline,
-      status: req.body.status || project.status,
-    }
+      const updatedFields = projectFields(req.body, project)
 
-    if (!updatedFields.tech_stack.length) {
-      return res
-        .status(400)
-        .json({ error: 'Tech stack must contain at least one item' })
-    }
-
-    if (updatedFields.budget !== null && updatedFields.budget < 0) {
-      return res.status(400).json({ error: 'Budget must be a positive number' })
-    }
-
-    if (!['open', 'closed', 'in_progress'].includes(updatedFields.status)) {
-      return res
-        .status(400)
-        .json({ error: 'Status must be open, in_progress, or closed' })
-    }
-
-    const result = await db.query(
-      `
+      if (updatedFields.status === 'open') {
+        const accepted = await client.query(
+          "SELECT id FROM applications WHERE project_id = $1 AND status = 'accepted'",
+          [project.id]
+        )
+        if (accepted.rows.length)
+          throw Object.assign(
+            new Error(
+              'Reject the accepted application before reopening this project'
+            ),
+            { status: 409 }
+          )
+      }
+      const result = await client.query(
+        `
         UPDATE projects
         SET title = $1, description = $2, tech_stack = $3, budget = $4, deadline = $5, status = $6
         WHERE id = $7
         RETURNING *
       `,
-      [
-        updatedFields.title,
-        updatedFields.description,
-        updatedFields.tech_stack,
-        updatedFields.budget,
-        updatedFields.deadline,
-        updatedFields.status,
-        req.params.id,
-      ]
-    )
+        [
+          updatedFields.title,
+          updatedFields.description,
+          updatedFields.tech_stack,
+          updatedFields.budget,
+          updatedFields.deadline,
+          updatedFields.status,
+          req.params.id,
+        ]
+      )
 
-    res.json(result.rows[0])
+      return result.rows[0]
+    })
+    res.json(updated)
   } catch (error) {
     next(error)
   }
@@ -274,21 +253,3 @@ router.delete('/:id', auth, async (req, res, next) => {
 })
 
 module.exports = router
-
-function normalizeBudget(value, fallbackValue) {
-  if (value === undefined) {
-    return fallbackValue
-  }
-
-  if (value === null || value === '') {
-    return null
-  }
-
-  const parsedValue = Number.parseInt(value, 10)
-
-  if (Number.isNaN(parsedValue)) {
-    return fallbackValue
-  }
-
-  return parsedValue
-}

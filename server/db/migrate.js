@@ -42,7 +42,11 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS idx_applications_applicant_id ON applications (applicant_id);
   `)
   console.log('Migration complete')
-  process.exit()
 }
 
-migrate().catch(console.error)
+migrate()
+  .catch((error) => {
+    console.error(error)
+    process.exitCode = 1
+  })
+  .finally(() => db.close())

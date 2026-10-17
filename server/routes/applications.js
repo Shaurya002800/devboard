@@ -1,54 +1,42 @@
 const router = require('express').Router()
 const db = require('../db')
 const auth = require('../middleware/auth')
+const { uuid, text, idParam } = require('../middleware/validation')
+router.param('id', idParam)
+
+function fail(status, message) {
+  throw Object.assign(new Error(message), { status })
+}
 
 router.post('/', auth, async (req, res, next) => {
   try {
-    const { project_id, pitch } = req.body
-
-    if (!project_id || !pitch?.trim()) {
-      return res.status(400).json({ error: 'Project and pitch are required' })
-    }
-
-    const projectResult = await db.query(
-      'SELECT id, poster_id, status FROM projects WHERE id = $1',
-      [project_id]
-    )
-    const project = projectResult.rows[0]
-
-    if (!project) {
-      return res.status(404).json({ error: 'Project not found' })
-    }
-
-    if (project.poster_id === req.user.id) {
-      return res
-        .status(403)
-        .json({ error: 'You cannot apply to your own project' })
-    }
-
-    if (project.status !== 'open') {
-      return res
-        .status(400)
-        .json({ error: 'This project is no longer accepting applications' })
-    }
-
-    const result = await db.query(
-      `
-        INSERT INTO applications (project_id, applicant_id, pitch)
-        VALUES ($1, $2, $3)
-        RETURNING *
-      `,
-      [project_id, req.user.id, pitch.trim()]
-    )
-
-    res.status(201).json(result.rows[0])
+    const projectId = uuid(req.body.project_id, 'Project ID')
+    const pitch = text(req.body.pitch, 'Pitch', 10000)
+    const application = await db.transaction(async (client) => {
+      // Every application mutation locks the project first, serializing reviews and submissions.
+      const {
+        rows: [project],
+      } = await client.query(
+        'SELECT id, poster_id, status FROM projects WHERE id = $1 FOR UPDATE',
+        [projectId]
+      )
+      if (!project) fail(404, 'Project not found')
+      if (project.poster_id === req.user.id)
+        fail(403, 'You cannot apply to your own project')
+      if (project.status !== 'open')
+        fail(400, 'This project is no longer accepting applications')
+      const result = await client.query(
+        'INSERT INTO applications (project_id, applicant_id, pitch) VALUES ($1, $2, $3) RETURNING *',
+        [projectId, req.user.id, pitch]
+      )
+      return result.rows[0]
+    })
+    res.status(201).json(application)
   } catch (error) {
-    if (error.code === '23505') {
+    if (error.code === '23505')
       return res
         .status(409)
         .json({ error: 'You have already applied to this project' })
-    }
-
     next(error)
   }
 })
@@ -120,73 +108,64 @@ router.get('/project/:id', auth, async (req, res, next) => {
 router.patch('/:id', auth, async (req, res, next) => {
   try {
     const { status } = req.body
+    if (!['accepted', 'rejected'].includes(status))
+      fail(400, 'Status must be accepted or rejected')
 
-    if (!['accepted', 'rejected'].includes(status)) {
-      return res
-        .status(400)
-        .json({ error: 'Status must be accepted or rejected' })
-    }
-
-    const applicationResult = await db.query(
-      `
-        SELECT a.*, p.poster_id, p.id AS project_id
-        FROM applications a
-        JOIN projects p ON p.id = a.project_id
-        WHERE a.id = $1
-      `,
-      [req.params.id]
-    )
-    const application = applicationResult.rows[0]
-
-    if (!application) {
-      return res.status(404).json({ error: 'Application not found' })
-    }
-
-    if (application.poster_id !== req.user.id) {
-      return res
-        .status(403)
-        .json({ error: 'Only the project owner can review applications' })
-    }
-
-    const result = await db.query(
-      'UPDATE applications SET status = $1 WHERE id = $2 RETURNING *',
-      [status, req.params.id]
-    )
-
-    if (status === 'accepted') {
-      await db.query(
-        `UPDATE projects SET status = 'in_progress' WHERE id = $1`,
-        [application.project_id]
+    const application = await db.transaction(async (client) => {
+      const {
+        rows: [project],
+      } = await client.query(
+        `SELECT p.id, p.poster_id, p.status FROM projects p
+         JOIN applications a ON a.project_id = p.id WHERE a.id = $1 FOR UPDATE OF p`,
+        [req.params.id]
       )
+      if (!project) fail(404, 'Application not found')
+      if (project.poster_id !== req.user.id)
+        fail(403, 'Only the project owner can review applications')
+      const {
+        rows: [current],
+      } = await client.query('SELECT * FROM applications WHERE id = $1', [
+        req.params.id,
+      ])
+      if (current.status === status) return current
 
-      await db.query(
-        `
-          UPDATE applications
-          SET status = 'rejected'
-          WHERE project_id = $1 AND id <> $2 AND status = 'pending'
-        `,
-        [application.project_id, req.params.id]
-      )
-    }
-
-    if (status === 'rejected') {
-      const acceptedApplications = await db.query(
-        `
-          SELECT COUNT(*)::INT AS accepted_count
-          FROM applications
-          WHERE project_id = $1 AND status = 'accepted'
-        `,
-        [application.project_id]
-      )
-
-      if ((acceptedApplications.rows[0]?.accepted_count || 0) === 0) {
-        await db.query(`UPDATE projects SET status = 'open' WHERE id = $1`, [
-          application.project_id,
-        ])
+      if (status === 'accepted') {
+        if (project.status === 'closed')
+          fail(409, 'Reopen the project before accepting an application')
+        const accepted = await client.query(
+          "SELECT id FROM applications WHERE project_id = $1 AND status = 'accepted' AND id <> $2",
+          [project.id, current.id]
+        )
+        if (accepted.rows.length)
+          fail(409, 'This project already has an accepted application')
       }
-    }
 
-    res.json(result.rows[0])
+      const result = await client.query(
+        'UPDATE applications SET status = $1 WHERE id = $2 RETURNING *',
+        [status, current.id]
+      )
+      if (status === 'accepted') {
+        await client.query(
+          "UPDATE projects SET status = 'in_progress' WHERE id = $1",
+          [project.id]
+        )
+        await client.query(
+          "UPDATE applications SET status = 'rejected' WHERE project_id = $1 AND id <> $2 AND status = 'pending'",
+          [project.id, current.id]
+        )
+      } else if (
+        current.status === 'accepted' &&
+        project.status === 'in_progress'
+      ) {
+        await client.query(
+          `UPDATE projects SET status = 'open' WHERE id = $1
+           AND NOT EXISTS (SELECT 1 FROM applications WHERE project_id = $1 AND status = 'accepted')`,
+          [project.id]
+        )
+      }
+      return result.rows[0]
+    })
+    res.json(application)
   } catch (error) {
     next(error)
   }

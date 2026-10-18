@@ -253,7 +253,7 @@ export function ApplyPanel({ project }: { project: Project }) {
       ) : null}
 
       {user && currentUserName ? (
-        <div className="mt-5 rounded-[1.5rem] border border-[var(--line)] bg-[rgba(249,115,22,0.05)] px-4 py-3 text-sm text-[var(--muted)]">
+        <div className="mt-5 rounded-[1.5rem] border border-[var(--line)] bg-[#f5eadb] px-4 py-3 text-sm text-[var(--muted)]">
           Applying as{' '}
           <span className="font-semibold text-[var(--ink)]">
             {currentUserName}
@@ -268,13 +268,13 @@ export function ApplyPanel({ project }: { project: Project }) {
       ) : null}
 
       {applySuccess ? (
-        <div className="mt-5 rounded-[1.5rem] border border-[rgba(249,115,22,0.2)] bg-[rgba(249,115,22,0.08)] p-4 text-sm text-[var(--brand-dark)]">
+        <div className="mt-5 rounded-[1.5rem] border border-[var(--line)] bg-[#f5eadb] p-4 text-sm text-[var(--brand-dark)]">
           Application sent successfully. You can track it from your dashboard.
         </div>
       ) : null}
 
       {alreadyApplied && !applySuccess ? (
-        <div className="mt-5 rounded-[1.5rem] border border-[rgba(249,115,22,0.2)] bg-[rgba(249,115,22,0.08)] p-4 text-sm text-[var(--brand-dark)]">
+        <div className="mt-5 rounded-[1.5rem] border border-[var(--line)] bg-[#f5eadb] p-4 text-sm text-[var(--brand-dark)]">
           You already applied to this project. Check your dashboard for updates.
         </div>
       ) : null}

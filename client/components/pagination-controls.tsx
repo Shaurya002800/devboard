@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { safeFetchProjects } from '@/lib/api'
 
 function buildHref(page: number, stack: string, budget: string) {
   const params = new URLSearchParams()
@@ -17,7 +18,7 @@ function buildHref(page: number, stack: string, budget: string) {
   return query ? `/?${query}` : '/'
 }
 
-export function PaginationControls({
+export async function PaginationControls({
   page,
   stack,
   budget,
@@ -26,6 +27,8 @@ export function PaginationControls({
   stack: string
   budget: string
 }) {
+  const { data } = await safeFetchProjects({ page, stack, budget, limit: 6 })
+  const hasMore = Boolean(data?.pagination?.hasMore)
   return (
     <div className="obsidian-frame flex items-center justify-between rounded-[1.75rem] px-4 py-3">
       <p className="text-sm text-[var(--muted)]">Page {page}</p>
@@ -36,9 +39,18 @@ export function PaginationControls({
         >
           Previous
         </Link>
-        <Link href={buildHref(page + 1, stack, budget)} className="btn-primary">
-          Next
-        </Link>
+        {hasMore ? (
+          <Link
+            href={buildHref(page + 1, stack, budget)}
+            className="btn-primary"
+          >
+            Next
+          </Link>
+        ) : (
+          <span className="btn-primary opacity-50" aria-disabled="true">
+            Next
+          </span>
+        )}
       </div>
     </div>
   )

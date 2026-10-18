@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { PaginationControls } from '@/components/pagination-controls'
 import { ProjectFeed } from '@/components/project-feed'
 import { ProjectFilters } from '@/components/project-filters'
@@ -17,54 +18,82 @@ export default async function Home({ searchParams }: HomeProps) {
 
   return (
     <div className="flex flex-col gap-10">
-      <section className="obsidian-frame fade-up overflow-hidden rounded-[2.4rem] px-6 py-8 sm:px-8 lg:px-12 lg:py-12">
-        <div className="grid gap-8 lg:grid-cols-[1.35fr_0.9fr] lg:items-end">
-          <div className="space-y-5">
-            <p className="eyebrow">Pitch black. High signal. Real builders.</p>
-            <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-[var(--ink)] sm:text-5xl lg:text-6xl">
-              Post ambitious software work and find developers who can actually
-              ship it.
+      <section className="obsidian-frame fade-up relative overflow-hidden px-6 py-12 sm:px-10 lg:px-14 lg:py-16">
+        <div
+          aria-hidden="true"
+          className="absolute -right-20 -top-28 h-80 w-80 rounded-full border-[32px] border-[#e9d9c1] opacity-50"
+        />
+        <div className="relative grid gap-10 lg:grid-cols-[1.4fr_0.8fr] lg:items-center">
+          <div>
+            <p className="eyebrow">A considered place for good work</p>
+            <h1 className="mt-5 max-w-3xl text-5xl leading-[1.08] text-[var(--ink)] sm:text-6xl lg:text-7xl">
+              Good projects deserve{' '}
+              <em className="font-normal text-[var(--accent)]">
+                great people.
+              </em>
             </h1>
-            <p className="max-w-2xl text-base leading-7 text-[var(--muted)] sm:text-lg">
-              DevBoard is a focused hiring board for indie products, startup
-              experiments, and serious side projects. Clean briefs in. Strong
-              applicants out.
+            <p className="mt-6 max-w-xl text-base leading-8 text-[var(--muted)] sm:text-lg">
+              A quieter way to find your next collaborator. Share a clear brief,
+              discover thoughtful work, and connect with builders who can make
+              it real.
             </p>
-            <div className="flex flex-wrap gap-3">
-              <span className="obsidian-chip">Pitch black UI</span>
-              <span className="obsidian-chip">Warm amber accent</span>
-              <span className="obsidian-chip">Built for product teams</span>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a href="#projects" className="btn-primary">
+                Explore projects{' '}
+                <span aria-hidden="true" className="ml-3">
+                  ↗
+                </span>
+              </a>
+              <Link href="/projects/new" className="btn-secondary">
+                Post a project
+              </Link>
             </div>
           </div>
-
-          <div className="grid gap-4 rounded-[2rem] border border-[var(--line)] bg-[rgba(41,37,36,0.38)] p-5 sm:grid-cols-3 lg:grid-cols-1">
-            <div className="obsidian-stat">
-              <p className="text-3xl font-semibold">01</p>
-              <p className="mt-2 text-sm text-[var(--muted)]">
-                List roles with stack, budget, and deadline in one clean brief.
-              </p>
-            </div>
-            <div className="obsidian-stat">
-              <p className="text-3xl font-semibold">02</p>
-              <p className="mt-2 text-sm text-[var(--muted)]">
-                Let developers apply with focused context, not random cold DMs.
-              </p>
-            </div>
-            <div className="obsidian-stat">
-              <p className="text-3xl font-semibold">03</p>
-              <p className="mt-2 text-sm text-[var(--muted)]">
-                Review applicants and move fast from idea to shipped MVP.
-              </p>
-            </div>
+          <div className="relative border-l-4 border-[var(--brand)] bg-[#eee0ca] p-7 sm:p-9">
+            <p className="eyebrow">How it works</p>
+            <ol className="mt-7 space-y-7">
+              {[
+                [
+                  '01',
+                  'Set the brief',
+                  'Tell people what you are building and what matters.',
+                ],
+                [
+                  '02',
+                  'Meet the right fit',
+                  'Get focused pitches from interested developers.',
+                ],
+                [
+                  '03',
+                  'Build together',
+                  'Choose your collaborator and get moving.',
+                ],
+              ].map(([number, title, description]) => (
+                <li
+                  key={number}
+                  className="flex gap-4 border-b border-[#cdb89b] pb-6 last:border-0 last:pb-0"
+                >
+                  <span className="font-[Georgia] text-2xl text-[var(--accent)]">
+                    {number}
+                  </span>
+                  <div>
+                    <h2 className="text-xl">{title}</h2>
+                    <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
+                      {description}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
           </div>
         </div>
       </section>
 
-      <section className="space-y-5">
+      <section id="projects" className="scroll-mt-28 space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="eyebrow">Browse Projects</p>
-            <h2 className="mt-2 text-2xl font-semibold">Open opportunities</h2>
+            <h2 className="mt-2 text-4xl font-semibold">Explore the board</h2>
           </div>
           <p className="max-w-xl text-sm text-[var(--muted)]">
             Filter by stack or budget to narrow down projects that match your

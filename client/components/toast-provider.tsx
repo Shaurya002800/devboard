@@ -39,7 +39,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className="fade-up rounded-2xl border border-[rgba(255,255,255,0.2)] bg-[var(--ink)] px-4 py-3 text-sm font-medium text-white shadow-2xl"
+            className="fade-up rounded-2xl border border-[var(--line)] bg-[var(--brand)] px-4 py-3 text-sm font-medium text-[#fffaf1] shadow-xl"
           >
             {toast.message}
           </div>

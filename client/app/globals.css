@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 :root {
-  --font-sans: 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-sans: Arial, Helvetica, sans-serif;
   --font-mono: 'SFMono-Regular', Menlo, monospace;
   --bg: #f5f0e6;
   --surface: #fffdf7;
@@ -65,9 +65,10 @@ button:disabled {
 h1,
 h2,
 h3 {
-  font-family: Georgia, 'Times New Roman', serif;
-  letter-spacing: -0.035em;
-  line-height: 1.13;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 1.12;
 }
 
 .panel,
@@ -242,7 +243,7 @@ h3 {
 .boot-loader__title {
   margin-top: 0.8rem;
   color: var(--ink);
-  font-family: Georgia, serif;
+  font-family: var(--font-sans);
   font-size: 2rem;
 }
 .boot-loader__bar {

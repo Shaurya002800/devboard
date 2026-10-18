@@ -28,9 +28,9 @@ export default async function Home({ searchParams }: HomeProps) {
             <p className="eyebrow">A considered place for good work</p>
             <h1 className="mt-5 max-w-3xl text-5xl leading-[1.08] text-[var(--ink)] sm:text-6xl lg:text-7xl">
               Good projects deserve{' '}
-              <em className="font-normal text-[var(--accent)]">
+              <span className="font-semibold not-italic text-[var(--accent)]">
                 great people.
-              </em>
+              </span>
             </h1>
             <p className="mt-6 max-w-xl text-base leading-8 text-[var(--muted)] sm:text-lg">
               A quieter way to find your next collaborator. Share a clear brief,
@@ -73,7 +73,7 @@ export default async function Home({ searchParams }: HomeProps) {
                   key={number}
                   className="flex gap-4 border-b border-[#cdb89b] pb-6 last:border-0 last:pb-0"
                 >
-                  <span className="font-[Georgia] text-2xl text-[var(--accent)]">
+                  <span className="font-semibold text-2xl text-[var(--accent)]">
                     {number}
                   </span>
                   <div>

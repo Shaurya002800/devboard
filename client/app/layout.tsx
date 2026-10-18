@@ -24,7 +24,7 @@ export default function RootLayout({
             </main>
             <footer className="border-t border-[var(--line)] bg-[#e9decc] px-4 py-8 text-sm text-[var(--muted)] sm:px-6">
               <div className="mx-auto flex max-w-7xl flex-col justify-between gap-3 sm:flex-row">
-                <span className="font-[Georgia] text-lg text-[var(--brand-dark)]">
+                <span className="text-lg text-[var(--brand-dark)]">
                   DevBoard
                 </span>
                 <span>Thoughtful projects. Good people. Better work.</span>

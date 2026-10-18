@@ -13,7 +13,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-20 border-b border-[var(--line)] bg-[rgba(250,246,238,0.94)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-md border border-[#51331f] bg-[var(--brand)] font-[Georgia] text-lg font-semibold text-[#fff9ef]">
+          <div className="flex h-11 w-11 items-center justify-center rounded-md border border-[#51331f] bg-[var(--brand)] text-lg font-semibold text-[#fff9ef]">
             DB
           </div>
           <div>
